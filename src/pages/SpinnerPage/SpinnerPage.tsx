@@ -993,7 +993,7 @@ export function SpinnerPage(): JSX.Element {
         </div>
 
         {/* Telegram Stars Donation Section */}
-        {isTelegramReady && (
+        {true && (
           <div className="card w-full max-w-md mx-auto rounded-2xl p-6 text-center mt-4 shadow-lg mb-4">
             <h2 className="text-xl font-bold mb-1">{t.supportTitle}</h2>
             <p
