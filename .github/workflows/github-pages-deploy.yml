@@ -35,7 +35,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          # No cache here, pnpm/action-setup will handle it
 
       # Add this step to install pnpm
       - name: Install pnpm
@@ -43,9 +42,10 @@ jobs:
         with:
           version: 8 # Or your desired pnpm version
 
-      # Update this step to use pnpm
+      # Update this step to use pnpm install
+      # This will use pnpm-lock.yaml and install all dependencies
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Build
         run: npm run build # This script in package.json (tsc && vite build) is fine
