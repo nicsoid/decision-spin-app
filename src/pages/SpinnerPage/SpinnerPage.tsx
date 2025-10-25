@@ -584,7 +584,7 @@ export function SpinnerPage(): JSX.Element {
     const rotationChange = randomSpins * 360 + randomDegrees;
     const currentCumulativeRotation = cumulativeRotationRef.current;
     const targetCssRotation = currentCumulativeRotation + rotationChange;
-    const finalVisualAngle = targetCssRotation % 360;
+    //const finalVisualAngle = targetCssRotation % 360;
     // Apply rotation logic using cumulative rotation
     canvas.style.transition = "none"; // Remove transition before setting new rotation
     canvas.offsetHeight; // Force reflow to apply the no-transition style
