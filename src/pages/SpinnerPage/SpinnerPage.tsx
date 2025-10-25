@@ -281,7 +281,7 @@ const colors: string[] = [
   "#f43f5e",
 ];
 // Ensure this matches your actual deployed bot server URL
-const BOT_SERVER_URL = "https://nicsoid.github.com/decision-spin-app"; // ** IMPORTANT: Update this **
+const BOT_SERVER_URL = "https://niksoid.github.com/decision-spin-app/"; // ** IMPORTANT: Update this **
 
 // --- React Component ---
 export function SpinnerPage(): JSX.Element {
@@ -584,21 +584,18 @@ export function SpinnerPage(): JSX.Element {
     const rotationChange = randomSpins * 360 + randomDegrees;
     const currentCumulativeRotation = cumulativeRotationRef.current;
     const targetCssRotation = currentCumulativeRotation + rotationChange;
-    //const finalVisualAngle = targetCssRotation % 360;
     // Apply rotation logic using cumulative rotation
     canvas.style.transition = "none"; // Remove transition before setting new rotation
     canvas.offsetHeight; // Force reflow to apply the no-transition style
-    // Set the starting point for the new animation (optional, but can smooth visuals)
-    // canvas.style.transform = `rotate(${currentCumulativeRotation % 360}deg)`;
-    // canvas.offsetHeight; // Force reflow again
     canvas.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.3, 1)"; // Re-apply transition
     canvas.style.transform = `rotate(${targetCssRotation}deg)`; // Set final rotation
     cumulativeRotationRef.current = targetCssRotation; // Update cumulative rotation ref
 
     setTimeout(() => {
       const arcSize = 360 / options.length;
-      // Calculate winner based on the final visual angle
-      const winningAngle = (360 - (targetCssRotation % 360) + 270) % 360;
+      // Calculate winner based on the final visual angle after animation completes
+      const finalAngle = targetCssRotation % 360; // Corrected: use targetCssRotation
+      const winningAngle = (360 - finalAngle + 270) % 360;
       const index = Math.floor(winningAngle / arcSize);
       const winnerIndex = index >= 0 && index < options.length ? index : 0;
       setResult(options[winnerIndex]);
