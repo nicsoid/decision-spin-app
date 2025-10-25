@@ -1,102 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-// Import only the types needed that are likely available globally or easily defined
-import type { InvoiceStatus } from "@tma.js/sdk"; // Keep type if available
-
-// --- Local Type Definitions to avoid problematic imports ---
-// Define a subset of ThemeParams based on usage
-interface LocalThemeParams {
-  backgroundColor?: string;
-  textColor?: string;
-  hintColor?: string;
-  linkColor?: string;
-  buttonColor?: string;
-  buttonTextColor?: string;
-  secondaryBackgroundColor?: string;
-  // Add other theme keys if used elsewhere
-}
-
-// Define the WebApp interface locally based on usage
-interface CustomWebApp {
-  initData?: string;
-  initDataRaw?: string;
-  initDataUnsafe?: {
-    query_id?: string;
-    user?: {
-      id: number;
-      first_name: string;
-      last_name?: string;
-      username?: string;
-      language_code?: string;
-      is_premium?: boolean;
-      photo_url?: string;
-    };
-    // Add other properties if needed
-  };
-  version: string;
-  platform: string;
-  themeParams: LocalThemeParams; // Use local type
-  isExpanded: boolean;
-  viewportHeight: number;
-  viewportStableHeight: number;
-  // Add methods used
-  ready: () => void;
-  onEvent: (eventType: "themeChanged" | string, handler: () => void) => void; // Be more specific if possible
-  offEvent: (eventType: "themeChanged" | string, handler: () => void) => void;
-  sendData: (data: string) => void;
-  openLink: (url: string) => void;
-  openTelegramLink: (url: string) => void;
-  openInvoice: (
-    url: string,
-    callback?: (status: InvoiceStatus) => void
-  ) => void; // Use imported type
-  showPopup: (params: any, callback?: () => void) => void;
-  showAlert: (message: string, callback?: () => void) => void;
-  showConfirm: (
-    message: string,
-    callback?: (confirmed: boolean) => void
-  ) => void;
-  // Add components used
-  MainButton: {
-    text: string;
-    color: string;
-    textColor: string;
-    isVisible: boolean;
-    isActive: boolean;
-    isProgressVisible: boolean;
-    setText: (text: string) => void;
-    onClick: (callback: () => void) => void;
-    offClick: (callback: () => void) => void;
-    show: () => void;
-    hide: () => void;
-    enable: () => void;
-    disable: () => void;
-    showProgress: (leaveActive?: boolean) => void;
-    hideProgress: () => void;
-    setParams: (params: any) => void;
-  };
-  BackButton: {
-    isVisible: boolean;
-    onClick: (callback: () => void) => void;
-    offClick: (callback: () => void) => void;
-    show: () => void;
-    hide: () => void;
-  };
-  HapticFeedback: {
-    impactOccurred: (
-      style: "light" | "medium" | "heavy" | "rigid" | "soft"
-    ) => void;
-    notificationOccurred: (type: "error" | "success" | "warning") => void;
-    selectionChanged: () => void;
-  };
-  // Add other necessary properties/methods if you use them
-}
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: CustomWebApp; // Use the custom interface
-    };
-  }
-}
+// Import hooks and types from @tma.js/sdk-react
+import {
+  useMiniApp,
+  useThemeParams,
+  useBackButton,
+  useHapticFeedback,
+  usePopup,
+  useMainButton,
+  type InvoiceStatus,
+  type ThemeParams, // Keep relevant types
+} from "@tma.js/sdk-react";
 
 // --- Types ---
 type LanguageCode = "en" | "uk" | "es" | "de" | "fr" | "zh";
@@ -201,7 +114,7 @@ const translations: Translations = {
     footer: "An einem Tag gebaut!",
     supportTitle: "Unterstütze die App!",
     supportSub: "Spende mit Telegram Stars, damit diese App weiterläuft.",
-    paymentSuccess: "Zahlung Erfolgreich!",
+    paymentSuccess: "Zahlung ErfolgreICH!",
     paymentSuccessMsg: "Danke für deine Unterstützung!",
     paymentFailed: "Zahlung Fehlgeschlagen",
     paymentFailedMsg: "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
@@ -280,8 +193,8 @@ const colors: string[] = [
   "#ec4899",
   "#f43f5e",
 ];
-// Ensure this matches your actual deployed bot server URL
-const BOT_SERVER_URL = "https://niksoid.github.com/decision-spin-app/"; // ** IMPORTANT: Update this **
+// This URL must point to your *bot server*, not your GitHub Pages site.
+const BOT_SERVER_URL = "https://your-bot-server-domain.com"; // ** IMPORTANT: Update this **
 
 // --- React Component ---
 export function SpinnerPage(): JSX.Element {
@@ -309,10 +222,15 @@ export function SpinnerPage(): JSX.Element {
   const [result, setResult] = useState<string>("");
   const [geminiLoading, setGeminiLoading] = useState<boolean>(false);
   const [starsLoading, setStarsLoading] = useState<boolean>(false);
-  // Use state for tg object, theme, and readiness flag
-  const [tg, setTg] = useState<CustomWebApp | null>(null); // Use CustomWebApp type
-  const [themeParams, setThemeParams] = useState<Partial<LocalThemeParams>>({}); // Use local type
-  const [isTelegramReady, setIsTelegramReady] = useState<boolean>(false);
+
+  // --- TMA SDK Hooks ---
+  // Pass `true` to initialize the components if they aren't already
+  const miniApp = useMiniApp(true);
+  const themeParams = useThemeParams(true);
+  const backButton = useBackButton(true);
+  const haptic = useHapticFeedback(true);
+  const popup = usePopup(true);
+  const mainButton = useMainButton(true);
 
   // --- Refs ---
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -324,9 +242,9 @@ export function SpinnerPage(): JSX.Element {
 
   // --- Helper function to apply CSS variables ---
   const applyCssVariables = useCallback(
-    (params: Partial<LocalThemeParams> | null) => {
+    (params: ReturnType<typeof themeParams.getState> | null) => {
       const root = document.documentElement;
-      // Use property names from LocalThemeParams
+      // Use the correct property names from the SDK: `backgroundColor`, `secondaryBackgroundColor`
       root.style.setProperty(
         "--tg-theme-bg-color",
         params?.backgroundColor || "#ffffff"
@@ -363,134 +281,50 @@ export function SpinnerPage(): JSX.Element {
 
   // --- Effects ---
 
-  // 1. Initial Load: Detect TG Environment, Load Options, Set Language, Setup Back Button
+  // 1. Initial Language Setup & Back Button
   useEffect(() => {
-    let telegramApp: CustomWebApp | null = null;
-    let themeUpdateHandler: (() => void) | null = null;
-    let backButtonHandler: (() => void) | null = null;
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-    let attempts = 0;
-    const maxAttempts = 5;
+    // miniApp might be null on first render, so we check
+    const userLang = (
+      miniApp?.initData?.user?.languageCode ||
+      navigator.language ||
+      "en"
+    ).split("-")[0];
+    let defaultLang: LanguageCode = "en";
+    if (Object.keys(translations).includes(userLang))
+      defaultLang = userLang as LanguageCode;
+    const savedLang =
+      (localStorage.getItem("decisionSpinnerLang") as LanguageCode | null) ||
+      defaultLang;
+    setLang(savedLang);
 
-    const setupTelegram = (app: CustomWebApp) => {
-      if (intervalId) clearInterval(intervalId);
-      try {
-        app.ready();
-        setTg(app); // Set state with the detected app object
-        const currentParams = app.themeParams;
-        setThemeParams(currentParams); // Set initial theme state
-        applyCssVariables(currentParams); // Apply initial theme CSS
+    const handleBack = () => window.history.back();
+    // Ensure backButton is available before using it
+    if (backButton) {
+      backButton.show();
+      backButton.on("click", handleBack);
 
-        // Check platform readiness with a slight delay if needed
-        if (app.platform && app.platform !== "unknown") {
-          setIsTelegramReady(true);
-          console.log("Telegram Ready Flag SET", app.platform);
-        } else {
-          // Sometimes platform is set slightly after ready()
-          setTimeout(() => {
-            // Re-check the platform property on the same app object
-            if (app.platform && app.platform !== "unknown") {
-              setIsTelegramReady(true);
-              console.log(
-                "Telegram Ready Flag SET (delayed check)",
-                app.platform
-              );
-            } else {
-              console.warn("Telegram platform still unknown after delay.");
-              setIsTelegramReady(false); // Explicitly false if still unknown
-            }
-          }, 300); // 300ms delay for platform property
-        }
-
-        // Setup theme change listener
-        themeUpdateHandler = () => {
-          const updatedParams = app.themeParams;
-          setThemeParams(updatedParams); // Update theme state
-          applyCssVariables(updatedParams); // Update theme CSS
-        };
-        app.onEvent("themeChanged", themeUpdateHandler);
-
-        // Setup back button
-        app.BackButton.show();
-        backButtonHandler = () => window.history.back(); // Simple browser back
-        app.BackButton.onClick(backButtonHandler);
-
-        // Determine and set language
-        const userLang = (
-          app.initDataUnsafe?.user?.language_code ||
-          navigator.language ||
-          "en"
-        ).split("-")[0];
-        let defaultLang: LanguageCode = "en";
-        if (Object.keys(translations).includes(userLang))
-          defaultLang = userLang as LanguageCode;
-        const savedLang =
-          (localStorage.getItem(
-            "decisionSpinnerLang"
-          ) as LanguageCode | null) || defaultLang;
-        setLang(savedLang);
-      } catch (e) {
-        console.error("Error setting up Telegram:", e);
-        setIsTelegramReady(false); // Set false on error
-        applyCssVariables({}); // Apply default styles on error
-        determineBrowserLanguage(); // Set language based on browser
-      }
-    };
-
-    // Helper to set language if TG fails
-    const determineBrowserLanguage = () => {
-      const browserLang = (navigator.language || "en").split("-")[0];
-      let defaultLang: LanguageCode = "en";
-      if (Object.keys(translations).includes(browserLang))
-        defaultLang = browserLang as LanguageCode;
-      const savedLang =
-        (localStorage.getItem("decisionSpinnerLang") as LanguageCode | null) ||
-        defaultLang;
-      setLang(savedLang);
-    };
-
-    // Try to detect immediately
-    if (window.Telegram && window.Telegram.WebApp) {
-      telegramApp = window.Telegram.WebApp;
-      setupTelegram(telegramApp);
-    } else {
-      // Fallback: Check repeatedly for a short period
-      intervalId = setInterval(() => {
-        attempts++;
-        if (window.Telegram && window.Telegram.WebApp) {
-          telegramApp = window.Telegram.WebApp;
-          setupTelegram(telegramApp); // Setup if found
-        } else if (attempts >= maxAttempts) {
-          // Stop checking after max attempts
-          if (intervalId) clearInterval(intervalId);
-          console.warn(
-            `TG WebApp not found after ${attempts} attempts. Assuming browser environment.`
-          );
-          setIsTelegramReady(false); // Definitely not Telegram
-          applyCssVariables({}); // Apply default styles
-          determineBrowserLanguage(); // Set language based on browser
-        }
-      }, 500); // Check every 500ms
+      return () => {
+        backButton.off("click", handleBack);
+        backButton.hide();
+      };
     }
+  }, [miniApp, backButton]);
 
-    // Cleanup function
-    return () => {
-      if (intervalId) clearInterval(intervalId); // Clear interval if running
-      // Use the most recent reference to telegramApp for cleanup
-      const appToClean = window.Telegram?.WebApp;
-      if (appToClean) {
-        // Use the handlers captured in the closure
-        if (themeUpdateHandler)
-          appToClean.offEvent("themeChanged", themeUpdateHandler);
-        if (backButtonHandler && appToClean.BackButton.isVisible) {
-          appToClean.BackButton.offClick(backButtonHandler);
-          appToClean.BackButton.hide();
-        }
-      }
-    };
-  }, [applyCssVariables]); // Run only once on mount, include applyCssVariables in deps
+  // 2. Apply Theme Variables when themeParams from SDK hook changes
+  useEffect(() => {
+    if (themeParams) {
+      applyCssVariables(themeParams.getState());
+      const unsubscribe = themeParams.on("change", () => {
+        applyCssVariables(themeParams.getState());
+      });
+      return unsubscribe;
+    } else {
+      // Fallback for non-telegram environment
+      applyCssVariables(null);
+    }
+  }, [themeParams, applyCssVariables]);
 
-  // 2. Draw Spinner Effect
+  // 3. Draw Spinner Effect - runs when options, language, or theme state changes
   useEffect(() => {
     const drawSpinner = () => {
       const canvas = canvasRef.current;
@@ -502,9 +336,10 @@ export function SpinnerPage(): JSX.Element {
       const textRadius = 110;
       const insideRadius = 0;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // Use state themeParams, provide fallbacks
-      const currentBtnTextColor = themeParams?.buttonTextColor || "#ffffff";
-      const currentHintColor = themeParams?.hintColor || "#999999";
+
+      const currentSdkTheme = themeParams?.getState(); // Check if themeParams exists
+      const currentBtnTextColor = currentSdkTheme?.buttonTextColor || "#ffffff";
+      const currentHintColor = currentSdkTheme?.hintColor || "#999999";
 
       ctx.strokeStyle = currentHintColor;
       ctx.lineWidth = 1;
@@ -550,15 +385,15 @@ export function SpinnerPage(): JSX.Element {
     if (options.length > 0 || localStorage.getItem("decisionSpinnerOptions")) {
       localStorage.setItem("decisionSpinnerOptions", JSON.stringify(options));
     }
-  }, [options, lang, themeParams]); // Depend on state themeParams
+  }, [options, lang, themeParams]);
 
-  // 3. Update document title & save language
+  // 4. Update document title & save language
   useEffect(() => {
     document.title = t.title;
     localStorage.setItem("decisionSpinnerLang", lang);
   }, [t.title, lang]);
 
-  // --- Handlers ---
+  // --- Handlers (using SDK hooks) ---
   const handleAddOption = () => {
     const optionText = optionInputRef.current?.value.trim();
     if (optionText && !options.includes(optionText)) {
@@ -575,44 +410,42 @@ export function SpinnerPage(): JSX.Element {
 
   const handleSpin = () => {
     const canvas = canvasRef.current;
-    if (isSpinning || !canvas || options.length < 2) return;
+    if (isSpinning || !canvas || !miniApp || options.length < 2) return;
     setIsSpinning(true);
     setResult("");
-    if (isTelegramReady && tg) tg.HapticFeedback.impactOccurred("light"); // Check flag and tg object
+    haptic?.impactOccurred("light");
     const randomSpins = Math.floor(Math.random() * 5) + 8;
     const randomDegrees = Math.random() * 360;
     const rotationChange = randomSpins * 360 + randomDegrees;
     const currentCumulativeRotation = cumulativeRotationRef.current;
     const targetCssRotation = currentCumulativeRotation + rotationChange;
-    // Apply rotation logic using cumulative rotation
-    canvas.style.transition = "none"; // Remove transition before setting new rotation
-    canvas.offsetHeight; // Force reflow to apply the no-transition style
-    canvas.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.3, 1)"; // Re-apply transition
-    canvas.style.transform = `rotate(${targetCssRotation}deg)`; // Set final rotation
-    cumulativeRotationRef.current = targetCssRotation; // Update cumulative rotation ref
+
+    canvas.style.transition = "none";
+    canvas.offsetHeight; // Force reflow
+    canvas.style.transition = "transform 4.5s cubic-bezier(0.1, 1, 0.3, 1)";
+    canvas.style.transform = `rotate(${targetCssRotation}deg)`;
+    cumulativeRotationRef.current = targetCssRotation;
 
     setTimeout(() => {
       const arcSize = 360 / options.length;
-      // Calculate winner based on the final visual angle after animation completes
-      const finalAngle = targetCssRotation % 360; // Corrected: use targetCssRotation
+      const finalAngle = targetCssRotation % 360;
       const winningAngle = (360 - finalAngle + 270) % 360;
       const index = Math.floor(winningAngle / arcSize);
       const winnerIndex = index >= 0 && index < options.length ? index : 0;
       setResult(options[winnerIndex]);
-      if (isTelegramReady && tg)
-        tg.HapticFeedback.notificationOccurred("success");
-    }, 4400); // Near the end of the animation
+      haptic?.notificationOccurred("success");
+    }, 4400);
     setTimeout(() => {
       setIsSpinning(false);
-    }, 4500); // After animation ends
+    }, 4500);
   };
 
-  // --- Gemini API ---
+  // --- Gemini API (callGeminiApi, handleGeminiSuggestions - using SDK hooks) ---
   const callGeminiApi = async (
     prompt: string,
     maxRetries: number = 3
   ): Promise<string[] | null> => {
-    const API_KEY = "AIzaSyD5z_90qKVlOebb0HEouZ3f-qtYJH7QctQ"; // Keep empty for automatic handling
+    const API_KEY = ""; // Handled by environment
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
     const payload = {
       contents: [{ parts: [{ text: prompt }] }],
@@ -662,9 +495,9 @@ export function SpinnerPage(): JSX.Element {
   };
 
   const handleGeminiSuggestions = async () => {
+    if (!miniApp) return;
     setGeminiLoading(true);
-    // Use tg state object
-    if (isTelegramReady && tg) tg.MainButton.showProgress();
+    mainButton?.showLoader();
     let prompt: string;
     if (options.length > 0) {
       const optionsString = options.slice(0, 15).join(", ");
@@ -690,18 +523,10 @@ export function SpinnerPage(): JSX.Element {
           );
         if (newOptions.length > 0) {
           setOptions((prev) => [...prev, ...newOptions.slice(0, 5)]);
-          if (isTelegramReady && tg)
-            tg.HapticFeedback.notificationOccurred("success");
+          haptic?.notificationOccurred("success");
         } else {
-          if (isTelegramReady && tg) {
-            tg.showPopup({
-              title: "Info",
-              message: "No new unique suggestions found.",
-            });
-            tg.HapticFeedback.notificationOccurred("warning");
-          } else {
-            alert("No new unique suggestions found.");
-          }
+          popup?.open({ message: "No new unique suggestions found." });
+          haptic?.notificationOccurred("warning");
         }
         if (canvasRef.current) {
           canvasRef.current.style.transform = `${
@@ -715,132 +540,136 @@ export function SpinnerPage(): JSX.Element {
           }, 200);
         }
       } else {
-        throw new Error("Failed to get valid suggestions after retries.");
+        throw new Error("Failed after retries.");
       }
     } catch (error) {
       console.error("Error handling Gemini:", error);
       const msg = `${t.geminiError} ${(error as Error).message || ""}`.trim();
-      if (isTelegramReady && tg) {
-        tg.showPopup({ title: "Error", message: msg });
-        tg.HapticFeedback.notificationOccurred("error");
-      } else {
-        alert(msg);
-      }
+      popup?.open({ title: "Error", message: msg });
+      haptic?.notificationOccurred("error");
     } finally {
       setGeminiLoading(false);
-      if (isTelegramReady && tg) tg.MainButton.hideProgress();
+      mainButton?.hideLoader();
     }
   };
 
-  // --- Telegram Stars ---
+  // --- Telegram Stars (requestDonation - using SDK hooks) ---
   const requestDonation = async (amount: number) => {
-    // Use tg state object and isTelegramReady flag
-    const initDataForRequest = tg?.initDataRaw || tg?.initData;
-    if (!isTelegramReady || !tg || !initDataForRequest) {
+    const initDataRaw = miniApp?.initDataRaw; // Use initDataRaw from the hook
+
+    if (!miniApp || !initDataRaw) {
       console.warn(
-        "Telegram environment not ready or initData missing for donation."
+        "Telegram MiniApp context not available or initDataRaw is missing.",
+        { miniApp, initDataRaw }
       );
-      alert("Donations only available within Telegram or initData is missing.");
+      popup?.open({
+        title: "Error",
+        message:
+          "Donations only available within Telegram or initData is missing.",
+      });
       return;
     }
+
     setStarsLoading(true);
-    tg.MainButton.showProgress();
-    tg.HapticFeedback.impactOccurred("light");
+    mainButton?.showLoader();
+    haptic?.impactOccurred("light");
+
     try {
       const response = await fetch(`${BOT_SERVER_URL}/create-invoice`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: amount, initData: initDataForRequest }),
+        body: JSON.stringify({ amount: amount, initData: initDataRaw }), // Send initDataRaw
       });
+
       if (!response.ok) {
         const body = await response.text();
         throw new Error(`Invoice creation failed: ${response.status}. ${body}`);
       }
       const { invoiceUrl } = await response.json();
-      if (!invoiceUrl || typeof invoiceUrl !== "string")
-        throw new Error("Invalid invoice URL from server.");
+      if (!invoiceUrl || typeof invoiceUrl !== "string") {
+        throw new Error("Invalid invoice URL received from server.");
+      }
 
-      // Use tg object to open invoice
-      tg.openInvoice(invoiceUrl, (status: InvoiceStatus) => {
-        // Add explicit type for status
-        handleInvoiceClose(status); // Call separate handler
+      // Use miniApp.openInvoice
+      miniApp.openInvoice(invoiceUrl, (status: InvoiceStatus) => {
+        handleInvoiceClose(status);
       });
     } catch (error: unknown) {
-      // Use unknown for catch block error
       console.error("Donation error:", error);
-      // Type assertion for error message
       const msg = `Donation failed: ${
         (error instanceof Error ? error.message : String(error)) || "Unknown"
       }.`;
-      tg.showPopup({ title: "Error", message: msg });
+      popup?.open({ title: "Error", message: msg });
       setStarsLoading(false);
-      tg.MainButton.hideProgress();
-      tg.HapticFeedback.notificationOccurred("error");
+      mainButton?.hideLoader();
+      haptic?.notificationOccurred("error");
     }
   };
 
   // Callback for when the invoice popup closes
-  // Define outside requestDonation to be accessible
   const handleInvoiceClose = (status: InvoiceStatus) => {
-    if (!tg) return; // Guard against tg being null
     setStarsLoading(false);
-    tg.MainButton.hideProgress();
+    mainButton?.hideLoader();
 
     if (status === "paid") {
-      tg.showPopup({ title: t.paymentSuccess, message: t.paymentSuccessMsg });
-      tg.HapticFeedback.notificationOccurred("success");
+      popup?.open({ title: t.paymentSuccess, message: t.paymentSuccessMsg });
+      haptic?.notificationOccurred("success");
     } else if (status === "failed" || status === "pending") {
-      tg.showPopup({
+      popup?.open({
         title: t.paymentFailed,
         message: `${t.paymentFailedMsg} (Status: ${status})`,
       });
-      tg.HapticFeedback.notificationOccurred("error");
+      haptic?.notificationOccurred("error");
     } else if (status === "cancelled") {
-      tg.HapticFeedback.notificationOccurred("warning");
+      haptic?.notificationOccurred("warning");
     } else {
       console.warn("Unexpected invoice status:", status);
-      tg.showPopup({ title: "Info", message: `Status: ${status}` });
-      tg.HapticFeedback.notificationOccurred("warning");
+      popup?.open({ title: "Info", message: `Status: ${status}` });
+      haptic?.notificationOccurred("warning");
     }
   };
+
+  // --- Conditional Rendering Check ---
+  // This is the most reliable check.
+  // The SDK provides the miniApp object. If it's there AND its platform
+  // is known, then it's safe to assume initData is also available.
+  const isTelegramReady = !!miniApp && miniApp.platform !== "unknown";
 
   // --- Render ---
   return (
     <React.Fragment>
       {/* --- STYLE DEFINITIONS --- */}
       <style>{`
-                 body { background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); margin: 0; font-family: Inter, sans-serif; overscroll-behavior: none; }
-                html, body, #root { height: 100%; }
+                /* Tailwind directives are in index.css, this block adds theme-awareness */
                 .card { background-color: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color, #000000); }
-                .input-field, .lang-select { background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); border: 1px solid var(--tg-theme-hint-color, #999999); border-radius: 0.5rem; }
+                .input-field, .lang-select { background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); border: 1px solid var(--tg-theme-hint-color, #999999); }
                 .lang-select:focus, .input-field:focus { outline: 2px solid var(--tg-theme-button-color, #007aff); outline-offset: 1px; border-color: transparent; }
-                .button-primary { background-color: var(--tg-theme-button-color, #007aff); color: var(--tg-theme-button-text-color, #ffffff); border-radius: 0.5rem; }
+                .button-primary { background-color: var(--tg-theme-button-color, #007aff); color: var(--tg-theme-button-text-color, #ffffff); }
                 .button-primary:disabled { opacity: 0.6; cursor: not-allowed; }
                 .button-primary:hover:not(:disabled) { filter: brightness(110%); }
-                .button-secondary { background-color: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color, #000000); border: 1px solid var(--tg-theme-hint-color, #999999); border-radius: 0.5rem; }
+                .button-secondary { background-color: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color, #000000); border: 1px solid var(--tg-theme-hint-color, #999999); }
                 .button-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
                 .button-secondary:hover:not(:disabled) { filter: brightness(95%); }
-                .option-tag { background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); border: 1px solid var(--tg-theme-hint-color, #999999); align-items: center; box-sizing: border-box; }
-                .option-tag button { padding-left: 0.25rem; padding-right: 0.25rem; }
+                .option-tag { background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); border: 1px solid var(--tg-theme-hint-color, #999999); }
                 .spinner-arrow { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid var(--tg-theme-button-color, #007aff); }
                 #options-legend ol li { color: var(--tg-theme-text-color, #000000); }
                 #options-legend { background-color: var(--tg-theme-bg-color, #ffffff); border: 1px solid var(--tg-theme-hint-color, #999999); }
                 #options-legend::-webkit-scrollbar { display: none; }
                 #options-legend { -ms-overflow-style: none; scrollbar-width: none; }
-                .focus\\:ring-indigo-500:focus { --tw-ring-color: var(--tg-theme-button-color, #007aff); box-shadow: 0 0 0 2px var(--tw-ring-color); outline: none; }
             `}</style>
 
+      {/* Main container with Tailwind classes */}
       <div className="flex flex-col items-center justify-start min-h-screen p-4 pt-8 overflow-x-hidden">
         {/* Visual Debugger (Optional) */}
         {/* <p style={{ position: 'fixed', top: 0, left: 0, background: 'rgba(0,0,0,0.7)', color: 'lime', padding: '2px 5px', fontSize: '10px', zIndex: 1000 }}>
-                    Is TG Ready: {isTelegramReady ? 'Yes' : 'No'} | Platform: {tg?.platform || 'N/A'}
+                    isTelegramReady: {isTelegramReady ? 'Yes' : 'No'} | Platform: {miniApp?.platform || 'N/A'} | initDataRaw: {miniApp?.initDataRaw ? 'Exists' : 'MISSING'}
                  </p> */}
 
         {/* Language Selector */}
         <div className="w-full max-w-md mx-auto mb-4">
           <select
             id="lang-select"
-            className="lang-select w-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
+            className="lang-select w-full px-4 py-2 text-sm rounded-lg"
             value={lang}
             onChange={(e) => setLang(e.target.value as LanguageCode)}
           >
@@ -856,10 +685,7 @@ export function SpinnerPage(): JSX.Element {
         {/* Main Card */}
         <div className="card w-full max-w-md mx-auto rounded-2xl p-6 text-center shadow-lg mb-4">
           <h1 className="text-3xl font-bold mb-2">{t.heading}</h1>
-          <p
-            className="mb-6 text-sm"
-            style={{ color: "var(--tg-theme-hint-color)" }}
-          >
+          <p className="mb-6 text-sm text-[var(--tg-theme-hint-color)]">
             {t.subheading}
           </p>
           <div className="relative w-72 h-72 md:w-80 md:h-80 mx-auto mb-6">
@@ -882,12 +708,11 @@ export function SpinnerPage(): JSX.Element {
           </div>
           <button
             id="spin-btn"
-            className="button-primary w-full font-bold py-3 px-4 text-lg transition transform active:scale-95 disabled:opacity-60 shadow-md"
+            className="button-primary w-full font-bold py-3 px-4 text-lg transition transform active:scale-95 rounded-lg shadow-md"
             onClick={handleSpin}
             disabled={isSpinning || options.length < 2}
           >
-            {" "}
-            {t.spinButton}{" "}
+            {t.spinButton}
           </button>
           <div className="mt-6">
             <div className="flex gap-2">
@@ -895,13 +720,13 @@ export function SpinnerPage(): JSX.Element {
                 type="text"
                 id="option-input"
                 ref={optionInputRef}
-                className="input-field flex-grow px-4 py-2 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
+                className="input-field flex-grow px-4 py-2 rounded-lg"
                 placeholder={t.placeholder}
                 onKeyPress={handleInputKeyPress}
               />
               <button
                 id="add-btn"
-                className="button-secondary font-bold py-2 px-4 transition transform active:scale-95"
+                className="button-secondary font-bold py-2 px-4 rounded-lg transition transform active:scale-95"
                 onClick={handleAddOption}
               >
                 {t.addButton}
@@ -909,7 +734,7 @@ export function SpinnerPage(): JSX.Element {
             </div>
             <button
               id="gemini-btn"
-              className="button-primary w-full font-bold py-2 px-4 text-sm mt-3 flex items-center justify-center gap-2 transition transform active:scale-95 disabled:opacity-60 shadow-sm"
+              className="button-primary w-full font-bold py-2 px-4 text-sm mt-3 flex items-center justify-center gap-2 transition transform active:scale-95 rounded-lg shadow-sm"
               onClick={handleGeminiSuggestions}
               disabled={geminiLoading}
             >
@@ -992,20 +817,21 @@ export function SpinnerPage(): JSX.Element {
           </div>
         </div>
 
-        {/* Telegram Stars Donation Section */}
-        {true && (
+        {/* This is the section that was failing.
+                  It now checks `isTelegramReady`, which is true ONLY if `useMiniApp()` returns
+                  a valid app object AND the platform is not 'unknown'.
+                  This ensures initDataRaw is available when `requestDonation` is called.
+                */}
+        {isTelegramReady && (
           <div className="card w-full max-w-md mx-auto rounded-2xl p-6 text-center mt-4 shadow-lg mb-4">
             <h2 className="text-xl font-bold mb-1">{t.supportTitle}</h2>
-            <p
-              className="mb-4 text-sm"
-              style={{ color: "var(--tg-theme-hint-color)" }}
-            >
+            <p className="mb-4 text-sm text-[var(--tg-theme-hint-color)]">
               {t.supportSub}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => requestDonation(100)}
-                className="button-secondary p-3 text-sm transition transform active:scale-95 disabled:opacity-60"
+                className="button-secondary p-3 text-sm rounded-lg transition transform active:scale-95"
                 disabled={starsLoading}
               >
                 {" "}
@@ -1013,7 +839,7 @@ export function SpinnerPage(): JSX.Element {
               </button>
               <button
                 onClick={() => requestDonation(500)}
-                className="button-secondary p-3 text-sm transition transform active:scale-95 disabled:opacity-60"
+                className="button-secondary p-3 text-sm rounded-lg transition transform active:scale-95"
                 disabled={starsLoading}
               >
                 {" "}
@@ -1023,10 +849,7 @@ export function SpinnerPage(): JSX.Element {
           </div>
         )}
 
-        <footer
-          className="mt-4 text-center text-xs"
-          style={{ color: "var(--tg-theme-hint-color)" }}
-        >
+        <footer className="mt-4 text-center text-xs text-[var(--tg-theme-hint-color)]">
           <p>{t.footer}</p>
         </footer>
       </div>

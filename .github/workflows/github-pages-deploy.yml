@@ -2,8 +2,7 @@
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes targeting the 'master' branch.
-  # IMPORTANT: Change 'master' to 'main' if your default branch is named 'main'.
+  # Runs on pushes targeting the 'main' branch (assuming this is your default)
   push:
     branches: ["main"]
 
@@ -16,11 +15,10 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+# Allow only one concurrent deployment
 concurrency:
   group: "pages"
-  cancel-in-progress: false # Changed from true to false to avoid canceling production deployments
+  cancel-in-progress: false
 
 jobs:
   # Single deploy job since we're just deploying
@@ -31,29 +29,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4 # Already latest
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4 # Updated from v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18 # Keeping Node 18 as specified
-          cache: "npm" # Add caching for npm dependencies
+          node-version: 18
+          # No cache here, pnpm/action-setup will handle it
 
+      # Add this step to install pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8 # Or your desired pnpm version
+
+      # Update this step to use pnpm
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: npm run build
+        run: npm run build # This script in package.json (tsc && vite build) is fine
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5 # Updated from v3
+        uses: actions/configure-pages@v5
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3 # Updated from v2
+        uses: actions/upload-pages-artifact@v3
         with:
           # Upload the 'dist' directory created by the build step
           path: "./dist"
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4 # Updated from v2
+        uses: actions/deploy-pages@v4
