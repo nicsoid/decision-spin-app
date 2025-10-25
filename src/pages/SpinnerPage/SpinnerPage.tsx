@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 // Removed SDK hook imports - going back to direct window access
-import type { InvoiceStatus, User, ThemeParams, WebApp } from "@tma.js/sdk"; // Keep types if possible
-
+//import type { InvoiceStatus, User, ThemeParams, WebApp } from "@tma.js/sdk"; // Keep types if possible
+import type { InvoiceStatus, ThemeParams } from "@tma.js/sdk";
 // --- Types ---
 type LanguageCode = "en" | "uk" | "es" | "de" | "fr" | "zh";
 
