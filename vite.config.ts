@@ -4,7 +4,7 @@ import { resolve } from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: "/decisionspinner-mini-app",
+  base: "/decision-spin-app",
   plugins: [react()],
   define: {
     "process.env": {},

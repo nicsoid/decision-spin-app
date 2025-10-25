@@ -1,9 +1,9 @@
 {
-  "name": "decisionspinner-mini-app",
+  "name": "decision-spin-app",
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "homepage": "https://nikoseiorg.github.com/decisionspinner-mini-app/",
+  "homepage": "https://niksoid.github.com/decision-spin-app/",
   "scripts": {
     "deploy": "gh-pages -d dist",
     "dev": "vite",
