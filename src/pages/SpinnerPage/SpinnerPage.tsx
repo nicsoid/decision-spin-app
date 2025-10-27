@@ -8,7 +8,7 @@ import {
   usePopup,
   useMainButton,
   type InvoiceStatus,
-  type ThemeParams, // Keep relevant types
+  type ThemeParams,
 } from "@tma.js/sdk-react";
 
 // --- Types ---
@@ -114,7 +114,7 @@ const translations: Translations = {
     footer: "An einem Tag gebaut!",
     supportTitle: "Unterstütze die App!",
     supportSub: "Spende mit Telegram Stars, damit diese App weiterläuft.",
-    paymentSuccess: "Zahlung ErfolgreICH!",
+    paymentSuccess: "Zahlung Erfolgreich!",
     paymentSuccessMsg: "Danke für deine Unterstützung!",
     paymentFailed: "Zahlung Fehlgeschlagen",
     paymentFailedMsg: "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
@@ -170,7 +170,7 @@ const translations: Translations = {
     geminiPrompt:
       '根据这个决策轮的列表，再给我5个简短的相关创意：{OPTIONS}。只返回一个包含5个字符串的JSON数组。例如：["创意1", "创意2", "创意3", "创意4", "创意5"]',
     geminiPromptEmpty:
-      '给我5个简短有趣的决策轮创意（例如“披萨”，“电影之夜”）。只返回一个包含5个字符串的JSON数组。例如：["创意1", "创意2", "创意3", "创意4", "创意5"]',
+      '给我5个简短有趣的决策轮创意（例如“披萨”，“电影之夜”）。只返回一个包含5个字符串的JSON数组。例如：["创意1", "创意2", "创意3", "创意4", "Id',
   },
 };
 
@@ -194,7 +194,7 @@ const colors: string[] = [
   "#f43f5e",
 ];
 // This URL must point to your *bot server*, not your GitHub Pages site.
-const BOT_SERVER_URL = "https://your-bot-server-domain.com"; // ** IMPORTANT: Update this **
+const BOT_SERVER_URL = "https://niksoid.github.io/decision-spin-app"; // ** This MUST be your bot server URL, not GitHub Pages **
 
 // --- React Component ---
 export function SpinnerPage(): JSX.Element {
@@ -559,7 +559,7 @@ export function SpinnerPage(): JSX.Element {
 
     if (!miniApp || !initDataRaw) {
       console.warn(
-        "Telegram MiniApp context not available or initDataRaw is missing.",
+        "Donation Error: MiniApp object or initDataRaw is missing.",
         { miniApp, initDataRaw }
       );
       popup?.open({
@@ -608,6 +608,7 @@ export function SpinnerPage(): JSX.Element {
 
   // Callback for when the invoice popup closes
   const handleInvoiceClose = (status: InvoiceStatus) => {
+    if (!miniApp) return; // Guard
     setStarsLoading(false);
     mainButton?.hideLoader();
 
@@ -630,9 +631,6 @@ export function SpinnerPage(): JSX.Element {
   };
 
   // --- Conditional Rendering Check ---
-  // This is the most reliable check.
-  // The SDK provides the miniApp object. If it's there AND its platform
-  // is known, then it's safe to assume initData is also available.
   const isTelegramReady = !!miniApp && miniApp.platform !== "unknown";
 
   // --- Render ---
@@ -661,9 +659,22 @@ export function SpinnerPage(): JSX.Element {
       {/* Main container with Tailwind classes */}
       <div className="flex flex-col items-center justify-start min-h-screen p-4 pt-8 overflow-x-hidden">
         {/* Visual Debugger (Optional) */}
-        {/* <p style={{ position: 'fixed', top: 0, left: 0, background: 'rgba(0,0,0,0.7)', color: 'lime', padding: '2px 5px', fontSize: '10px', zIndex: 1000 }}>
-                    isTelegramReady: {isTelegramReady ? 'Yes' : 'No'} | Platform: {miniApp?.platform || 'N/A'} | initDataRaw: {miniApp?.initDataRaw ? 'Exists' : 'MISSING'}
-                 </p> */}
+        <p
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            background: "rgba(0,0,0,0.7)",
+            color: "lime",
+            padding: "2px 5px",
+            fontSize: "10px",
+            zIndex: 1000,
+          }}
+        >
+          isTelegramReady: {isTelegramReady ? "Yes" : "No"} | Platform:{" "}
+          {miniApp?.platform || "N/A"} | initDataRaw:{" "}
+          {miniApp?.initDataRaw ? "Exists" : "MISSING"}
+        </p>
 
         {/* Language Selector */}
         <div className="w-full max-w-md mx-auto mb-4">
