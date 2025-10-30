@@ -48,7 +48,7 @@ jobs:
         run: pnpm install
 
       - name: Build
-        run: npm run build # This script in package.json (tsc && vite build) is fine
+        run: pnpm run build # Use pnpm to match the package manager used for installation
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

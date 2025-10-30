@@ -194,7 +194,8 @@ const colors: string[] = [
   "#f43f5e",
 ];
 // This URL must point to your *bot server*, not your GitHub Pages site.
-const BOT_SERVER_URL = "https://niksoid.github.io/decision-spin-app"; // ** This MUST be your bot server URL, not GitHub Pages **
+// Set VITE_BOT_SERVER_URL in your .env file (e.g., https://your-server.com)
+const BOT_SERVER_URL = import.meta.env.VITE_BOT_SERVER_URL || "";
 
 // --- React Component ---
 export function SpinnerPage(): JSX.Element {

@@ -193,6 +193,17 @@ Alternatively, developers can configure automatic deployment using the GitHub
 web interface. To do this, follow the link:
 `https://github.com/{username}/{repository}/settings/pages`.
 
+## Donation Stars Setup
+
+This app includes a Telegram Stars donation feature. To enable it, you need to set up a backend server:
+
+1. See [README_SERVER_SETUP.md](./README_SERVER_SETUP.md) for detailed instructions
+2. Deploy the backend server (`server.js`) to a hosting platform
+3. Configure environment variables with your bot token
+4. Update frontend `.env.local` with your server URL
+
+The donation feature will only appear when running inside Telegram with a properly configured backend.
+
 ## TON Connect
 
 This boilerplate utilizes
