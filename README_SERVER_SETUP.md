@@ -64,6 +64,7 @@ The server needs to be deployed to a hosting platform. Here are some options:
    VITE_BOT_SERVER_URL=https://your-backend-server.com
    ```
 3. Rebuild and redeploy your frontend
+4. If you use the provided GitHub Pages workflow, add a repository secret named `VITE_BOT_SERVER_URL` so the build step can inject your server URL (Settings → Secrets and variables → Actions)
 
 ### 4. Test the Integration
 
