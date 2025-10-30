@@ -560,18 +560,37 @@ export function SpinnerPage(): JSX.Element {
 
   // --- Telegram Stars (requestDonation - using SDK instances) ---
   const requestDonation = async (amount: number) => {
-    const initDataRaw = initData.raw(); // Use initDataRaw from initData signal
+    const tgInitData =
+      typeof window !== "undefined"
+        ? ((window as unknown as {
+            Telegram?: { WebApp?: { initData?: string } };
+          })?.Telegram?.WebApp?.initData ?? null)
+        : null;
+    const initDataRaw = initData.raw() ?? tgInitData; // Use initDataRaw from initData signal or fall back to TG initData string
 
-    if (!miniApp.isSupported() || !initDataRaw) {
-      console.warn(
-        "Donation Error: MiniApp object or initDataRaw is missing.",
-        { miniAppSupported: miniApp.isSupported(), initDataRaw }
-      );
+    if (!miniApp.isSupported()) {
+      console.warn("Donation Error: MiniApp object missing.", {
+        miniAppSupported: miniApp.isSupported(),
+      });
       if (popup.isSupported()) {
         popup.show({
           title: "Error",
-          message:
-            "Donations only available within Telegram or initData is missing.",
+          message: "Donations only available within Telegram.",
+        });
+      }
+      return;
+    }
+
+    if (!initDataRaw) {
+      console.warn("Donation Error: initDataRaw is missing.", {
+        miniAppSupported: miniApp.isSupported(),
+        initDataFromSdk: initData.raw(),
+        initDataFromTelegram: tgInitData,
+      });
+      if (popup.isSupported()) {
+        popup.show({
+          title: "Error",
+          message: "Telegram init data is missing.",
         });
       }
       return;
