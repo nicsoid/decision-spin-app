@@ -697,9 +697,9 @@ export function SpinnerPage(): JSX.Element {
             zIndex: 1000,
           }}
         >
-          isTelegramReady: {isTelegramReady ? "Yes" : "No"} | Supported:{" "}
+          {/*isTelegramReady: {isTelegramReady ? "Yes" : "No"} | Supported:{" "}
           {miniApp.isSupported() ? "Yes" : "No"} | initDataRaw:{" "}
-          {initData.raw() ? "Exists" : "MISSING"}
+          {initData.raw() ? "Exists" : "MISSING"}*/}
         </p>
 
         {/* Language Selector */}
@@ -887,7 +887,7 @@ export function SpinnerPage(): JSX.Element {
         )}
 
         <footer className="mt-4 text-center text-xs text-[var(--tg-theme-hint-color)]">
-          <p>{t.footer}</p>
+          {/*<p>{t.footer}</p>*/}
         </footer>
       </div>
     </React.Fragment>
