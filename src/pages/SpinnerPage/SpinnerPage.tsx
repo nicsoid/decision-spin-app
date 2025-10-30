@@ -196,7 +196,7 @@ const colors: string[] = [
 ];
 // This URL must point to your *bot server*, not your GitHub Pages site.
 // Set VITE_BOT_SERVER_URL in your .env file (e.g., https://your-server.com)
-const BOT_SERVER_URL = import.meta.env.VITE_BOT_SERVER_URL || "https://decision-spin-app.vercel.app";
+//const BOT_SERVER_URL = import.meta.env.VITE_BOT_SERVER_URL || "https://decision-spin-app.vercel.app";
 const BOT_SERVER_URL = "https://decision-spin-app.vercel.app";
 // --- React Component ---
 export function SpinnerPage(): JSX.Element {
