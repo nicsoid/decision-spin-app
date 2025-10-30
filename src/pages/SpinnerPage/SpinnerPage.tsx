@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-// Import hooks and types from @tma.js/sdk-react
+// Import SDK instances and types from @tma.js/sdk-react
 import {
-  useMiniApp,
-  useThemeParams,
-  useBackButton,
-  useHapticFeedback,
-  usePopup,
-  useMainButton,
-  type InvoiceStatus,
-  type ThemeParams,
+  miniApp,
+  themeParams,
+  backButton,
+  hapticFeedback,
+  popup,
+  mainButton,
+  invoice,
+  initData,
 } from "@tma.js/sdk-react";
+import type { InvoiceStatus } from "@tma.js/bridge";
 
 // --- Types ---
 type LanguageCode = "en" | "uk" | "es" | "de" | "fr" | "zh";
@@ -224,14 +225,8 @@ export function SpinnerPage(): JSX.Element {
   const [geminiLoading, setGeminiLoading] = useState<boolean>(false);
   const [starsLoading, setStarsLoading] = useState<boolean>(false);
 
-  // --- TMA SDK Hooks ---
-  // Pass `true` to initialize the components if they aren't already
-  const miniApp = useMiniApp(true);
-  const themeParams = useThemeParams(true);
-  const backButton = useBackButton(true);
-  const haptic = useHapticFeedback(true);
-  const popup = usePopup(true);
-  const mainButton = useMainButton(true);
+  // --- TMA SDK Instances ---
+  // SDK instances are imported directly and used without initialization
 
   // --- Refs ---
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -243,7 +238,7 @@ export function SpinnerPage(): JSX.Element {
 
   // --- Helper function to apply CSS variables ---
   const applyCssVariables = useCallback(
-    (params: ReturnType<typeof themeParams.getState> | null) => {
+    (params: any) => {
       const root = document.documentElement;
       // Use the correct property names from the SDK: `backgroundColor`, `secondaryBackgroundColor`
       root.style.setProperty(
@@ -284,9 +279,9 @@ export function SpinnerPage(): JSX.Element {
 
   // 1. Initial Language Setup & Back Button
   useEffect(() => {
-    // miniApp might be null on first render, so we check
+    // Get user language from initData if available
     const userLang = (
-      miniApp?.initData?.user?.languageCode ||
+      initData.user()?.language_code ||
       navigator.language ||
       "en"
     ).split("-")[0];
@@ -299,31 +294,26 @@ export function SpinnerPage(): JSX.Element {
     setLang(savedLang);
 
     const handleBack = () => window.history.back();
-    // Ensure backButton is available before using it
-    if (backButton) {
+    // Show back button and set up click handler
+    if (backButton.isSupported()) {
       backButton.show();
-      backButton.on("click", handleBack);
+      backButton.onClick(handleBack);
 
       return () => {
-        backButton.off("click", handleBack);
+        backButton.offClick(handleBack);
         backButton.hide();
       };
     }
-  }, [miniApp, backButton]);
+  }, []);
 
-  // 2. Apply Theme Variables when themeParams from SDK hook changes
+  // 2. Apply Theme Variables when themeParams changes
   useEffect(() => {
-    if (themeParams) {
-      applyCssVariables(themeParams.getState());
-      const unsubscribe = themeParams.on("change", () => {
-        applyCssVariables(themeParams.getState());
-      });
-      return unsubscribe;
-    } else {
-      // Fallback for non-telegram environment
-      applyCssVariables(null);
-    }
-  }, [themeParams, applyCssVariables]);
+    applyCssVariables(themeParams.state());
+    const unsubscribe = themeParams.state.sub(() => {
+      applyCssVariables(themeParams.state());
+    });
+    return unsubscribe;
+  }, [applyCssVariables]);
 
   // 3. Draw Spinner Effect - runs when options, language, or theme state changes
   useEffect(() => {
@@ -338,7 +328,7 @@ export function SpinnerPage(): JSX.Element {
       const insideRadius = 0;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const currentSdkTheme = themeParams?.getState(); // Check if themeParams exists
+      const currentSdkTheme = themeParams.state();
       const currentBtnTextColor = currentSdkTheme?.buttonTextColor || "#ffffff";
       const currentHintColor = currentSdkTheme?.hintColor || "#999999";
 
@@ -411,10 +401,12 @@ export function SpinnerPage(): JSX.Element {
 
   const handleSpin = () => {
     const canvas = canvasRef.current;
-    if (isSpinning || !canvas || !miniApp || options.length < 2) return;
+    if (isSpinning || !canvas || !miniApp.isSupported() || options.length < 2) return;
     setIsSpinning(true);
     setResult("");
-    haptic?.impactOccurred("light");
+    if (hapticFeedback.isSupported()) {
+      hapticFeedback.impactOccurred("light");
+    }
     const randomSpins = Math.floor(Math.random() * 5) + 8;
     const randomDegrees = Math.random() * 360;
     const rotationChange = randomSpins * 360 + randomDegrees;
@@ -434,7 +426,9 @@ export function SpinnerPage(): JSX.Element {
       const index = Math.floor(winningAngle / arcSize);
       const winnerIndex = index >= 0 && index < options.length ? index : 0;
       setResult(options[winnerIndex]);
-      haptic?.notificationOccurred("success");
+      if (hapticFeedback.isSupported()) {
+        hapticFeedback.notificationOccurred("success");
+      }
     }, 4400);
     setTimeout(() => {
       setIsSpinning(false);
@@ -496,9 +490,9 @@ export function SpinnerPage(): JSX.Element {
   };
 
   const handleGeminiSuggestions = async () => {
-    if (!miniApp) return;
+    if (!miniApp.isSupported()) return;
     setGeminiLoading(true);
-    mainButton?.showLoader();
+    mainButton.showLoader();
     let prompt: string;
     if (options.length > 0) {
       const optionsString = options.slice(0, 15).join(", ");
@@ -524,10 +518,16 @@ export function SpinnerPage(): JSX.Element {
           );
         if (newOptions.length > 0) {
           setOptions((prev) => [...prev, ...newOptions.slice(0, 5)]);
-          haptic?.notificationOccurred("success");
+          if (hapticFeedback.isSupported()) {
+            hapticFeedback.notificationOccurred("success");
+          }
         } else {
-          popup?.open({ message: "No new unique suggestions found." });
-          haptic?.notificationOccurred("warning");
+          if (popup.isSupported()) {
+            popup.show({ message: "No new unique suggestions found." });
+          }
+          if (hapticFeedback.isSupported()) {
+            hapticFeedback.notificationOccurred("warning");
+          }
         }
         if (canvasRef.current) {
           canvasRef.current.style.transform = `${
@@ -546,34 +546,42 @@ export function SpinnerPage(): JSX.Element {
     } catch (error) {
       console.error("Error handling Gemini:", error);
       const msg = `${t.geminiError} ${(error as Error).message || ""}`.trim();
-      popup?.open({ title: "Error", message: msg });
-      haptic?.notificationOccurred("error");
+      if (popup.isSupported()) {
+        popup.show({ title: "Error", message: msg });
+      }
+      if (hapticFeedback.isSupported()) {
+        hapticFeedback.notificationOccurred("error");
+      }
     } finally {
       setGeminiLoading(false);
-      mainButton?.hideLoader();
+      mainButton.hideLoader();
     }
   };
 
-  // --- Telegram Stars (requestDonation - using SDK hooks) ---
+  // --- Telegram Stars (requestDonation - using SDK instances) ---
   const requestDonation = async (amount: number) => {
-    const initDataRaw = miniApp?.initDataRaw; // Use initDataRaw from the hook
+    const initDataRaw = initData.raw(); // Use initDataRaw from initData signal
 
-    if (!miniApp || !initDataRaw) {
+    if (!miniApp.isSupported() || !initDataRaw) {
       console.warn(
         "Donation Error: MiniApp object or initDataRaw is missing.",
-        { miniApp, initDataRaw }
+        { miniAppSupported: miniApp.isSupported(), initDataRaw }
       );
-      popup?.open({
-        title: "Error",
-        message:
-          "Donations only available within Telegram or initData is missing.",
-      });
+      if (popup.isSupported()) {
+        popup.show({
+          title: "Error",
+          message:
+            "Donations only available within Telegram or initData is missing.",
+        });
+      }
       return;
     }
 
     setStarsLoading(true);
-    mainButton?.showLoader();
-    haptic?.impactOccurred("light");
+    mainButton.showLoader();
+    if (hapticFeedback.isSupported()) {
+      hapticFeedback.impactOccurred("light");
+    }
 
     try {
       const response = await fetch(`${BOT_SERVER_URL}/create-invoice`, {
@@ -591,48 +599,65 @@ export function SpinnerPage(): JSX.Element {
         throw new Error("Invalid invoice URL received from server.");
       }
 
-      // Use miniApp.openInvoice
-      miniApp.openInvoice(invoiceUrl, (status: InvoiceStatus) => {
-        handleInvoiceClose(status);
-      });
+      // Use invoice.openUrl
+      const status = await invoice.openUrl(invoiceUrl);
+      handleInvoiceClose(status);
     } catch (error: unknown) {
       console.error("Donation error:", error);
       const msg = `Donation failed: ${
         (error instanceof Error ? error.message : String(error)) || "Unknown"
       }.`;
-      popup?.open({ title: "Error", message: msg });
+      if (popup.isSupported()) {
+        popup.show({ title: "Error", message: msg });
+      }
       setStarsLoading(false);
-      mainButton?.hideLoader();
-      haptic?.notificationOccurred("error");
+      mainButton.hideLoader();
+      if (hapticFeedback.isSupported()) {
+        hapticFeedback.notificationOccurred("error");
+      }
     }
   };
 
   // Callback for when the invoice popup closes
   const handleInvoiceClose = (status: InvoiceStatus) => {
-    if (!miniApp) return; // Guard
+    if (!miniApp.isSupported()) return; // Guard
     setStarsLoading(false);
-    mainButton?.hideLoader();
+    mainButton.hideLoader();
 
     if (status === "paid") {
-      popup?.open({ title: t.paymentSuccess, message: t.paymentSuccessMsg });
-      haptic?.notificationOccurred("success");
+      if (popup.isSupported()) {
+        popup.show({ title: t.paymentSuccess, message: t.paymentSuccessMsg });
+      }
+      if (hapticFeedback.isSupported()) {
+        hapticFeedback.notificationOccurred("success");
+      }
     } else if (status === "failed" || status === "pending") {
-      popup?.open({
-        title: t.paymentFailed,
-        message: `${t.paymentFailedMsg} (Status: ${status})`,
-      });
-      haptic?.notificationOccurred("error");
+      if (popup.isSupported()) {
+        popup.show({
+          title: t.paymentFailed,
+          message: `${t.paymentFailedMsg} (Status: ${status})`,
+        });
+      }
+      if (hapticFeedback.isSupported()) {
+        hapticFeedback.notificationOccurred("error");
+      }
     } else if (status === "cancelled") {
-      haptic?.notificationOccurred("warning");
+      if (hapticFeedback.isSupported()) {
+        hapticFeedback.notificationOccurred("warning");
+      }
     } else {
       console.warn("Unexpected invoice status:", status);
-      popup?.open({ title: "Info", message: `Status: ${status}` });
-      haptic?.notificationOccurred("warning");
+      if (popup.isSupported()) {
+        popup.show({ title: "Info", message: `Status: ${status}` });
+      }
+      if (hapticFeedback.isSupported()) {
+        hapticFeedback.notificationOccurred("warning");
+      }
     }
   };
 
   // --- Conditional Rendering Check ---
-  const isTelegramReady = !!miniApp && miniApp.platform !== "unknown";
+  const isTelegramReady = miniApp.isSupported() && miniApp.state().isActive;
 
   // --- Render ---
   return (
@@ -672,9 +697,9 @@ export function SpinnerPage(): JSX.Element {
             zIndex: 1000,
           }}
         >
-          isTelegramReady: {isTelegramReady ? "Yes" : "No"} | Platform:{" "}
-          {miniApp?.platform || "N/A"} | initDataRaw:{" "}
-          {miniApp?.initDataRaw ? "Exists" : "MISSING"}
+          isTelegramReady: {isTelegramReady ? "Yes" : "No"} | Supported:{" "}
+          {miniApp.isSupported() ? "Yes" : "No"} | initDataRaw:{" "}
+          {initData.raw() ? "Exists" : "MISSING"}
         </p>
 
         {/* Language Selector */}
