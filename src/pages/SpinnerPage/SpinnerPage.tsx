@@ -196,7 +196,7 @@ const colors: string[] = [
 ];
 // This URL must point to your *bot server*, not your GitHub Pages site.
 // Set VITE_BOT_SERVER_URL in your .env file (e.g., https://your-server.com)
-const BOT_SERVER_URL = import.meta.env.VITE_BOT_SERVER_URL || "";
+const BOT_SERVER_URL = import.meta.env.VITE_BOT_SERVER_URL || "https://decision-spin-app.vercel.app/";
 
 // --- React Component ---
 export function SpinnerPage(): JSX.Element {
@@ -440,7 +440,7 @@ export function SpinnerPage(): JSX.Element {
     prompt: string,
     maxRetries: number = 3
   ): Promise<string[] | null> => {
-    const API_KEY = ""; // Handled by environment
+    const API_KEY = "AIzaSyD5z_90qKVlOebb0HEouZ3f-qtYJH7QctQ"; // Handled by environment
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
     const payload = {
       contents: [{ parts: [{ text: prompt }] }],
