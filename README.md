@@ -201,6 +201,7 @@ This app includes a Telegram Stars donation feature. To enable it, you need to s
 2. Deploy the backend server (`server.js`) to a hosting platform
 3. Configure environment variables with your bot token
 4. Update frontend `.env.local` with your server URL
+5. If you use the GitHub Pages workflow, add a repository secret named `VITE_BOT_SERVER_URL` so the build step picks up your backend URL
 
 The donation feature will only appear when running inside Telegram with a properly configured backend.
 
